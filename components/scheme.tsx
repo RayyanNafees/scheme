@@ -1,15 +1,26 @@
 import { twi } from "tw-to-css";
-// import { Menu } from "./menu.tsx";
 import { Link } from "./link.tsx";
 import { Menu } from "./menu.tsx";
-
-type Subject = { code: string; name: string; date: string; time: string };
+import { Head, asset } from "$fresh/runtime.ts";
+type Subject = {
+  course: string;
+  course_name: string;
+  date: string;
+  time: string;
+};
 
 export const Scheme = ({ enroll, myScheme }: {
   enroll: string;
   myScheme: Subject[];
 }) => (
   <>
+    <Head>
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/rippleui@1.12.1/dist/css/styles.css"
+      />
+      <link rel="stylesheet" href={asset("/compact.css")} />
+    </Head>
     <nav>
       <ul>
         <li>
@@ -22,7 +33,9 @@ export const Scheme = ({ enroll, myScheme }: {
               alt="menu"
             />
           </label>
-          <label class="overlay" for="drawer-left">&nbsp;</label>
+          <label class="overlay" for="drawer-left">
+            &nbsp;
+          </label>
           <div class="drawer">
             <div class="drawer-content pt-10 flex flex-col h-full">
               <label
@@ -65,27 +78,10 @@ export const Scheme = ({ enroll, myScheme }: {
       />
       <input type="submit" value="Search" />
     </form>
-    <script>
-      {`
-      document.querySelector('form').onload = function(e) {
-        localStorage.getItem('enroll') && window.location.href += '?enroll=' + localStorage.getItem('enroll')
-      }
 
-      document.querySelector('input[name="enroll"]').onchange = function(e) {
-        localStorage.setItem('enroll', e.target.value)
-      }
-      `}
-    </script>
-
-    <table
-      style={{ display: !enroll ? "none" : "table" }}
-      x-data="{ compact: false }"
-    >
+    <table style={{ display: !enroll ? "none" : "table" }}>
       <caption style={twi`text-2xl font-bold my-10`}>
-        Scheme{" "}
-        <small style={twi`text-xs font-semibold`} x-show="compact">
-          (compact)
-        </small>
+        Scheme <small style={twi`text-xs font-semibold`}>(compact)</small>
       </caption>
 
       <thead>
@@ -108,43 +104,62 @@ export const Scheme = ({ enroll, myScheme }: {
           <th>Name</th>
           <th>Date</th>
           <th>Time</th>
-          <th>Learn</th>
+          {/* <th>Learn</th> */}
         </tr>
       </thead>
-      <tbody>
+
+      <tbody class="uncompact">
         {myScheme?.map?.((i) => (
-          <tr key={i.code}>
-            <td x-text={`!compact?'${i.code}':'${i.code}'.toLowerCase()`}>
-              {i.code}
-            </td>
-            <td x-text={`!compact?'${i.name}':'${i.name}'.toLowerCase()`}>
-              {i.name}
-            </td>
-            <td x-text={`!compact?'${i.date}':new Date('${i.date}').getDate()`}>
-              {i.date}
-            </td>
-            <td x-text={`!compact?'${i.time}':'${i.time}'.split(' ')[0]`}>
-              {i.time}
-            </td>
-            <td><a href={`/learn/${i.code}`}>Learn</a></td>
+          <tr key={i.course}>
+            <td>{i.course}</td>
+            <td>{i.course_name}</td>
+            <td>{i.date}</td>
+            <td>{i.time}</td>
+            {
+              /*<td>
+              <a
+                href={`/learn/${i.course}?name=${i.course_name}&date=${i.date}&time=${i.time}`}
+                class="btn primary"
+              >
+                Learn
+              </a>
+            </td>*/
+            }
           </tr>
         ))}
       </tbody>
-      <tfoot>
+      <tbody class="compact">
+        {myScheme?.map?.((i) => (
+          <tr key={i.course}>
+            <td>{i.course.toLowerCase()}</td>
+            <td>{i.course_name.toLowerCase()}</td>
+            <td>{new Date(i.date).getDate()}</td>
+            <td>{i.time.split(" ")[0]}</td>
+            {
+              /* <td>
+              <a
+                href={`/learn/${i.course}?name=${i.course_name}&date=${i.date}&time=${i.time}`}
+                class="btn primary"
+              >
+                Learn
+              </a>
+            </td>*/
+            }
+          </tr>
+        ))}
+      </tbody>
+      <tfoot hidden={!enroll}>
         <tr>
           <td colspan={4}>
             {enroll && (
               <form
-                action="https://ctengg.amu.ac.in/web/reg_record.php"
+                action={`https://ctengg.amu.ac.in/web/reg_record_${
+                  new Date().getMonth() > 6 ? "odd" : "even"
+                }.php`}
                 method="post"
                 target="_blank"
               >
                 <input type="hidden" name="fac" value={enroll} />
-                <input
-                  type="hidden"
-                  name="sem"
-                  value={new Date().getMonth() > 6 ? "odd" : "even"}
-                />
                 <input type="hidden" name="submit" value="Download" />
                 <button type="submit">Download Registeration Card</button>
               </form>

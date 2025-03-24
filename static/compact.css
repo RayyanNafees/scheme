@@ -1,0 +1,25 @@
+:root {
+  background-color: #13171f;
+}
+
+button,
+input[type="submit"],
+a[role="button"] {
+  background-color: #017fc0 !important;
+}
+
+thead:has(input[type="checkbox"]:checked) ~ tbody.uncompact {
+  display: none;
+}
+
+table:has(input[type="checkbox"]:checked) caption > small {
+  display: inline;
+}
+
+thead:has(input[type="checkbox"]:not(:checked)) ~ tbody.compact {
+  display: none;
+}
+
+table:has(input[type="checkbox"]:not(:checked)) caption > small {
+  display: none;
+}

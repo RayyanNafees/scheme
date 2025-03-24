@@ -1,12 +1,12 @@
-import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
-import "pdf-parse";
-import * as v from "valibot";
+
+import { pdfText} from '@pdf/pdftext'
+
 
 export const parseRegistrationCard = (dataArr: string[], enroll?: string) => {
   const subs = dataArr
     .map((s) =>
       s.match(
-        /^(\d{1,2})([A-Z]{2,3})([A-Z]{3}\d{4})([A-z\s\&\-,\.\(\)]+)([a-d])(\d+\.\d+)$/,
+        /^(\d{1,2})\s?([A-Z]{2,3})\s?([A-Z]{3}\d{4})\s?([A-z\s\&\-,\.\(\)]+)\s?([a-d])\s?(\d+\.\d+)$/,
       )
     )
     .filter((i) => i !== null);
@@ -45,23 +45,21 @@ export const parseRegistrationCard = (dataArr: string[], enroll?: string) => {
 };
 
 export default async function (enroll: string) {
-  const enrollment_no = v.parse(v.pipe(v.string(), v.length(6)), enroll);
-
-  const file = await fetch("https://ctengg.amu.ac.in/web/reg_record.php", {
+  if (!/^[A-z]{2}\d{4}$/.test(enroll)) throw new Error("Invalid enrollment number");
+  const sem= new Date().getMonth() > 6 ? "odd" : "even";
+  const file = await fetch(`https://ctengg.amu.ac.in/web/reg_record_${sem}.php`, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: new URLSearchParams({
-      fac: enrollment_no,
-      sem: new Date().getMonth() > 6 ? "odd" : "even",
+      fac: enroll,
       submit: "Download",
     }),
-  }).then((r) => r.blob());
+  }).then((r) => r.arrayBuffer());
 
-  const pdf_loader = new PDFLoader(file, { splitPages: true });
-  const pages = await pdf_loader.load();
-  const data = pages[0].pageContent;
+  const pages = await pdfText(file)
+  const data = pages[0];
 
   const dataArr = data.split("\n");
 

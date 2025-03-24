@@ -1,27 +1,49 @@
 import courses from "../data/courses.json" with { type: "json" };
 import getInfoFromCard from "../utils/student.ts";
 import { Scheme } from "../components/scheme.tsx";
-import type { PageProps } from "$fresh/server.ts";
+import type { Handlers, PageProps } from "$fresh/server.ts";
+import { getCookies, setCookie } from "$std/http/cookie.ts";
 
-export default async function Page(props: PageProps) {
+interface Data {
+  enroll: `${string}${number}`;
+}
+
+export const handler: Handlers = {
+  GET(req, ctx) {
+    const cookies = getCookies(req.headers);
+    return ctx.render({ enroll: cookies.enroll });
+  },
+};
+
+export default async function Page(props: PageProps<Data>) {
   const url = new URL(props.url);
-  const enroll = url.searchParams.get("enroll") ?? ""; 
 
-  const studentInfo = !enroll
-    ? { subjects: [] }
-    : await getInfoFromCard(enroll.toUpperCase());
-  const modes = ["a", "b"];
-  const myScheme = !enroll ? [] : studentInfo.subjects
-    .filter(
-      (i) => courses.find((j) => j.id === i.code) && modes.includes(i.mode),
-    )
-    .map((i) => ({
-      code: i.code,
-      name: i.subject,
-      date: courses.find((j) => j.id === i.code)?.date as string,
-      time: courses.find((j) => j.id === i.code)?.time as string,
-    }))
-    .sort((a, b) => (new Date(a.date) > new Date(b.date) ? 1 : -1));
+  console.log(props);
+
+  const enroll = url.searchParams.get("enroll") ?? props.data?.enroll ?? "";
+
+  if (!enroll) return <Scheme enroll={enroll} myScheme={[]} />;
+
+  if (!props.data?.enroll) {
+    const headers = new Headers();
+    setCookie(headers, {
+      name: "enroll",
+      value: enroll, // this should be a unique value for each session
+      maxAge: 120,
+      sameSite: "Lax", // this is important to prevent CSRF attacks
+      domain: url.hostname,
+      path: "/",
+      secure: true,
+    });
+  }
+
+  const studentInfo = await getInfoFromCard(enroll.toUpperCase());
+
+  const subjectIds = studentInfo.subjects.map((i) => i.code);
+
+  const myScheme = courses
+    .filter((c) => subjectIds.includes(c.id))
+    .toSorted((a, b) => (new Date(a.date) > new Date(b.date) ? 1 : -1));
 
   return <Scheme enroll={enroll} myScheme={myScheme} />;
 }
